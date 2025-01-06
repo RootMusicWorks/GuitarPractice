@@ -1,6 +1,7 @@
 
 let tempo = 120;
 let bpmInput = document.getElementById("bpmInput");
+const clickAudio = new Audio('click.mp3');  
 const alarmAudio = new Audio('alarm.mp3');  
 let alarmTriggered = false;
 
@@ -16,22 +17,15 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Create a new AudioContext and Oscillator each time
-function createAudioContextAndClick() {
-    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioContext.createOscillator();
-    const gainNode = audioContext.createGain();
-    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
-    
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(1000, audioContext.currentTime);
-    osc.connect(gainNode);
-    gainNode.connect(audioContext.destination);
-    
-    osc.start();
-    osc.stop(audioContext.currentTime + 0.2);
-    logMessage("New AudioContext created and click sound played.");
+// ✅ Metronome using HTMLAudioElement
+function toggleMetronome() {
+    try {
+        clickAudio.currentTime = 0;
+        clickAudio.play();
+        logMessage("Click sound played using HTMLAudioElement.");
+    } catch (error) {
+        logMessage("Error playing click sound: " + error);
+    }
 }
 
 // ✅ Timer Section
@@ -105,7 +99,7 @@ function updateTimerDisplay() {
     }
 }
 
-// ✅ Alarm Sound Section
+// ✅ Alarm Sound using HTMLAudioElement
 function playAlarmSound() {
     alarmTriggered = true;
     try {
@@ -122,11 +116,6 @@ function playAlarmSound() {
     }
 }
 
-// ✅ Metronome Section using New Context Each Click
-function toggleMetronome() {
-    createAudioContextAndClick();
-}
-
 // ✅ BPM Adjustment with Debug
 function adjustBPM(change) {
     tempo += change;
@@ -134,9 +123,11 @@ function adjustBPM(change) {
     logMessage(`BPM adjusted to: ${tempo}`);
 }
 
-// ✅ Preload Alarm on Page Load
+// ✅ Preload Alarm and Click Sound on Page Load
 window.onload = () => {
     alarmAudio.preload = "auto";
+    clickAudio.preload = "auto";
     alarmAudio.load();
-    logMessage("Page loaded and alarm preloaded.");
+    clickAudio.load();
+    logMessage("Page loaded and sounds preloaded.");
 };
