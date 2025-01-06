@@ -1,132 +1,90 @@
 
-let tempo = 120;
-let bpmInput = document.getElementById("bpmInput");
-const clickAudio = new Audio('click.mp3');  
-const alarmAudio = new Audio('alarm.mp3');  
-clickAudio.preload = 'auto';
-alarmAudio.preload = 'auto';
+let audioContext;
+let clickSoundBuffer;
+let metronomeInterval;
+let timerInterval;
 
-let metronomeRunning = false;
-
-// ✅ Debug Log Display Setup
-const debugLog = document.createElement('div');
-debugLog.style.border = "1px solid red";
-debugLog.style.padding = "10px";
-debugLog.style.marginTop = "20px";
-document.body.appendChild(debugLog);
-
-function logMessage(message) {
-    console.log(message);
-    debugLog.innerHTML += message + "<br>";
+// Initialize audio
+async function initializeAudio() {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const response = await fetch('click.mp3');
+    const arrayBuffer = await response.arrayBuffer();
+    clickSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    log('Audio initialized and click sound loaded.');
 }
 
-// ✅ iOS Click Sound Fix using Immediate Interaction
+// Play click sound
 function playClickSound() {
-    try {
-        clickAudio.pause();  // Stop any ongoing playback
-        clickAudio.currentTime = 0;  // Reset audio for immediate replay
-        clickAudio.play();
-        logMessage("Click sound played using HTMLAudioElement.");
-    } catch (error) {
-        logMessage("Error playing click sound: " + error);
-    }
+    const source = audioContext.createBufferSource();
+    source.buffer = clickSoundBuffer;
+    source.connect(audioContext.destination);
+    source.start(0);
 }
 
-// ✅ Metronome Toggle with Explicit Preload
-function toggleMetronome() {
-    if (!metronomeRunning) {
-        metronomeRunning = true;
-        playClickSound();
-        metronomeInterval = setInterval(playClickSound, (60 / tempo) * 1000);
-    } else {
-        metronomeRunning = false;
-        clearInterval(metronomeInterval);
-        logMessage("Metronome stopped.");
-    }
+// Log function for debugging
+function log(message) {
+    const logDiv = document.getElementById('log');
+    logDiv.textContent += message + '\n';
 }
 
-// ✅ Timer Section
-let timerTimeRemaining = 600;
-let timerRunning = false;
-let timerInterval = null;
-
-function startTimer() {
-    try {
-        if (!timerRunning) {
-            const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
-            const seconds = parseInt(document.getElementById("secondsInput").value) || 0;
-            timerTimeRemaining = minutes * 60 + seconds;
-            updateTimerDisplay();
-
-            timerRunning = true;
-            timerInterval = setInterval(() => {
-                if (timerTimeRemaining > 0) {
-                    timerTimeRemaining--;
-                    updateTimerDisplay();
-                } 
-                if (timerTimeRemaining <= 0) {
-                    clearInterval(timerInterval);  
-                    timerRunning = false;
-                    playAlarmSound();  
-                }
-            }, 1000);
-            logMessage("Timer started.");
-        }
-    } catch (error) {
-        logMessage("Error starting timer: " + error);
+// Metronome controls
+document.getElementById('startMetronome').addEventListener('click', () => {
+    const bpm = parseInt(document.getElementById('bpm').value);
+    if (isNaN(bpm) || bpm <= 0) {
+        alert('Please enter a valid BPM value.');
+        return;
     }
-}
+    if (!audioContext) initializeAudio();
+    const interval = 60000 / bpm;
+    clearInterval(metronomeInterval);
+    metronomeInterval = setInterval(playClickSound, interval);
+    log('Metronome started at ' + bpm + ' BPM.');
+});
 
-function pauseTimer() {
-    if (timerRunning) {
-        clearInterval(timerInterval);
-        timerRunning = false;
-        logMessage("Timer paused.");
-    } else {
-        startTimer();
+document.getElementById('stopMetronome').addEventListener('click', () => {
+    clearInterval(metronomeInterval);
+    log('Metronome stopped.');
+});
+
+// Timer controls
+document.getElementById('startTimer').addEventListener('click', () => {
+    const minutes = parseInt(document.getElementById('minutes').value) || 0;
+    const seconds = parseInt(document.getElementById('seconds').value) || 0;
+    let totalSeconds = minutes * 60 + seconds;
+    if (totalSeconds <= 0) {
+        alert('Please set a valid timer duration.');
+        return;
     }
-}
-
-function resetTimer() {
     clearInterval(timerInterval);
-    timerRunning = false;
-    timerTimeRemaining = 600;
-    updateTimerDisplay();
-    logMessage("Timer reset.");
-}
+    timerInterval = setInterval(() => {
+        if (totalSeconds <= 0) {
+            clearInterval(timerInterval);
+            playClickSound();
+            log('Timer finished and click sound played.');
+        } else {
+            totalSeconds--;
+            const displayMinutes = Math.floor(totalSeconds / 60);
+            const displaySeconds = totalSeconds % 60;
+            document.getElementById('timeDisplay').textContent = 
+                displayMinutes + ':' + (displaySeconds < 10 ? '0' : '') + displaySeconds;
+        }
+    }, 1000);
+    log('Timer started.');
+});
 
-function updateTimerDisplay() {
-    const minutes = Math.floor(timerTimeRemaining / 60);
-    const seconds = timerTimeRemaining % 60;
-    document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-}
-
-// ✅ Alarm Sound using HTMLAudioElement (no AudioContext)
-function playAlarmSound() {
-    try {
-        alarmAudio.pause();
-        alarmAudio.currentTime = 0;
-        alarmAudio.play().then(() => {
-            alert("タイマーが終了しました");
-            logMessage("Alarm sound played successfully.");
-        }).catch(error => {
-            logMessage("Error playing alarm sound: " + error);
-        });
-    } catch (error) {
-        logMessage("Error playing alarm: " + error);
+document.getElementById('pauseResumeTimer').addEventListener('click', () => {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        log('Timer paused.');
+    } else {
+        document.getElementById('startTimer').click();
+        log('Timer resumed.');
     }
-}
+});
 
-// ✅ BPM Adjustment
-function adjustBPM(change) {
-    tempo += change;
-    bpmInput.value = tempo;
-    logMessage(`BPM adjusted to: ${tempo}`);
-}
-
-// ✅ Preload Audio on User Interaction
-window.addEventListener('pointerdown', () => {
-    clickAudio.load();
-    alarmAudio.load();
-    logMessage("Audio preloaded on user interaction.");
-}, { once: true });
+document.getElementById('stopTimer').addEventListener('click', () => {
+    clearInterval(timerInterval);
+    document.getElementById('timeDisplay').textContent = '0:00';
+    log('Timer stopped.');
+});
