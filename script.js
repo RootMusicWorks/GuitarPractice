@@ -23,7 +23,6 @@ function logMessage(message) {
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
         logMessage("AudioContext initialized.");
     }
     if (audioContext.state === 'suspended') {
@@ -100,10 +99,10 @@ function startTimer() {
                     updateTimerDisplay();
                 } 
                 if (timerTimeRemaining <= 0 && !alarmTriggered) {
-                    clearInterval(timerInterval);  // Ensure the timer stops completely
+                    clearInterval(timerInterval);  
                     timerRunning = false;
-                    logMessage("Timer reached zero. FORCING playAlarmSound() call.");
-                    playAlarmSound();  // Force alarm call
+                    logMessage("Timer reached zero. Triggering playAlarmSound().");
+                    playAlarmSound();  
                 }
             }, 1000);
             logMessage("Timer started.");
@@ -133,7 +132,7 @@ function resetTimer() {
         timerRunning = false;
         timerTimeRemaining = 600;
         updateTimerDisplay();
-        alarmTriggered = false;  // Reset alarm flag on reset
+        alarmTriggered = false;  
         logMessage("Timer reset.");
     } catch (error) {
         logMessage("Error resetting timer: " + error);
@@ -151,10 +150,10 @@ function updateTimerDisplay() {
     }
 }
 
-// Metronome Section with Logs
+// Metronome Section with Forced AudioContext Resume
 function playClick() {
     try {
-        if (!audioContext) return;
+        initializeAudioContext();  // Forcing AudioContext resume on each click
         const osc = audioContext.createOscillator();
         const envelope = audioContext.createGain();
         osc.type = 'square';
@@ -214,5 +213,6 @@ function adjustBPM(change) {
 // ✅ Preload Alarm and Initialize Context on Page Load
 window.onload = () => {
     preloadAlarmSound();
+    document.body.addEventListener('pointerdown', () => initializeAudioContext(), { once: true });
     logMessage("Page loaded and ready.");
 };
