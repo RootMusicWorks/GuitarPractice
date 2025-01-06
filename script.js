@@ -48,9 +48,13 @@ function stopTimer() {
     updateTimerDisplay(parseInt(timerInput.value) * 60);
 }
 
-// Alarm Sound (Oscillator)
+// Alarm Sound and Metronome Stop on Timer End
 function playAlarm() {
-    if (isPlaying) stopMetronome(); // Stop metronome if running
+    if (isPlaying) {
+        isPlaying = false;
+        stopMetronome();
+    }
+
     const osc = audioContext.createOscillator();
     const gain = audioContext.createGain();
     osc.frequency.value = 880;
@@ -60,7 +64,9 @@ function playAlarm() {
     osc.start();
     setTimeout(() => {
         osc.stop();
-        alert("タイマーが終了しました！");
+        setTimeout(() => {
+            alert("タイマーが終了しました！");
+        }, 100);
     }, 3000);
 }
 
