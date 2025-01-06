@@ -9,6 +9,7 @@ let timerDuration = 600; // 10 minutes default in seconds
 let timerInterval;
 let remainingTime = timerDuration;
 let isTimerRunning = false;
+let alarmAudio = new Audio('alarm.mp3');  // Load alarm audio
 
 // タイマーの開始
 function startTimer() {
@@ -53,8 +54,7 @@ function updateTimerDisplay(seconds) {
 
 // タイマー終了時のアラーム音再生
 function playAlarm() {
-    const alarm = new Audio('alarm.mp3'); 
-    alarm.play();
+    alarmAudio.play();
 }
 
 // タイマー終了時のメトロノーム停止
@@ -64,15 +64,12 @@ function stopMetronomeIfPlaying() {
     }
 }
 
-// タイマー終了後のダイアログ表示（EndとRe-Startの2択）
+// タイマー終了後のシンプルなダイアログ表示（OKボタンのみ）
 function showTimerEndDialog() {
-    const dialog = confirm("タイマー終了！
-Endを押すと終了し、Re-Startで再度タイマーを開始します。");
-    if (dialog) {
-        resetTimer();
-    } else {
-        startTimer();
-    }
+    alert("タイマー終了！OKを押してアラームを停止し、タイマーをリセットします。");
+    alarmAudio.pause();
+    alarmAudio.currentTime = 0;
+    resetTimer();
 }
 
 // メトロノーム制御（修正済み）
@@ -116,6 +113,7 @@ function scheduler() {
 }
 
 function playClick() {
+    if (!audioContext) return;
     const osc = audioContext.createOscillator();
     const gain = audioContext.createGain();
     osc.frequency.value = 1000;
