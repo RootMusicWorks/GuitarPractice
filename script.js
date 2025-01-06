@@ -9,6 +9,7 @@ let timerDuration = 600; // 10 minutes in seconds
 let timerRunning = false;
 let timerPaused = false;
 let timerInterval;
+let alarmOscillator = null;
 let beatCounter = 0;
 
 // Timer Functions
@@ -35,10 +36,24 @@ function startTimer() {
     }, 1000);
 }
 
-function pauseTimer() {
-    clearInterval(timerInterval);
-    timerRunning = false;
-    timerPaused = true;
+function pauseResumeTimer() {
+    if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        timerPaused = true;
+    } else if (timerPaused) {
+        timerRunning = true;
+        timerPaused = false;
+        timerInterval = setInterval(() => {
+            if (timerDuration > 0) {
+                timerDuration--;
+                updateTimerDisplay(timerDuration);
+            } else {
+                stopTimer();
+                playAlarm();
+            }
+        }, 1000);
+    }
 }
 
 function stopTimer() {
@@ -48,26 +63,27 @@ function stopTimer() {
     updateTimerDisplay(parseInt(timerInput.value) * 60);
 }
 
-// Alarm Sound and Metronome Stop on Timer End
+// Alarm Sound (Oscillator) with dialog control
 function playAlarm() {
-    if (isPlaying) {
-        isPlaying = false;
-        stopMetronome();
-    }
-
-    const osc = audioContext.createOscillator();
+    if (isPlaying) stopMetronome(); // Stop metronome if running
+    alarmOscillator = audioContext.createOscillator();
     const gain = audioContext.createGain();
-    osc.frequency.value = 880;
+    alarmOscillator.frequency.value = 880;
     gain.gain.value = 0.5;
-    osc.connect(gain);
+    alarmOscillator.connect(gain);
     gain.connect(audioContext.destination);
-    osc.start();
-    setTimeout(() => {
-        osc.stop();
-        setTimeout(() => {
-            alert("タイマーが終了しました！");
-        }, 100);
-    }, 3000);
+    alarmOscillator.start();
+
+    alert("タイマーが終了しました。OKを押すとアラームが停止します。");
+    stopAlarm();
+}
+
+function stopAlarm() {
+    if (alarmOscillator) {
+        alarmOscillator.stop();
+        alarmOscillator.disconnect();
+        alarmOscillator = null;
+    }
 }
 
 // Metronome Functions
