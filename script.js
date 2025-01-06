@@ -5,7 +5,12 @@ let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
 const alarmAudio = new Audio('alarm.mp3');  
-const debugLog = document.createElement('div');  // Debug output section
+
+// ✅ Log Display for Debugging
+const debugLog = document.createElement('div');
+debugLog.style.border = "1px solid red";
+debugLog.style.padding = "10px";
+debugLog.style.marginTop = "20px";
 document.body.appendChild(debugLog);
 
 function logMessage(message) {
@@ -13,23 +18,19 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Explicit AudioContext Activation
+// ✅ Forced AudioContext Activation on Button Press Only
 function initializeAudioContext() {
-    try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
-            logMessage("AudioContext initialized.");
-        }
-        if (audioContext.state === 'suspended') {
-            audioContext.resume().then(() => logMessage("AudioContext resumed."));
-        }
-    } catch (error) {
-        logMessage("Error initializing AudioContext: " + error);
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
+        logMessage("AudioContext initialized.");
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume().then(() => logMessage("AudioContext resumed."));
     }
 }
 
-// ✅ Alarm Preloading with Debug Logs
+// ✅ Alarm Sound Preload and Handling
 function preloadAlarmSound() {
     try {
         alarmAudio.preload = "auto";
@@ -40,14 +41,14 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Alarm Playback with Strict Logging
+// ✅ Synchronized Alarm and Metronome Stop with User Interaction
 function playAlarmSound() {
+    initializeAudioContext();
     try {
-        stopMetronome(); 
+        stopMetronome();  // Ensure metronome stops
         alarmAudio.pause();
         alarmAudio.currentTime = 0;
         alarmAudio.play().then(() => {
-            logMessage("Alarm sound played successfully.");
             alert("タイマーが終了しました");
         }).catch(error => {
             logMessage("Error playing alarm sound: " + error);
@@ -57,12 +58,12 @@ function playAlarmSound() {
     }
 }
 
-// ✅ Stop Metronome with Full Debug Info
+// ✅ Stop Metronome Completely
 function stopMetronome() {
     try {
         isPlaying = false;
         nextNoteTime = 0;
-        logMessage("Metronome stopped.");
+        logMessage("Metronome force stopped.");
     } catch (error) {
         logMessage("Error stopping metronome: " + error);
     }
@@ -74,6 +75,7 @@ let timerRunning = false;
 let timerInterval = null;
 
 function startTimer() {
+    initializeAudioContext();
     try {
         if (!timerRunning) {
             const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
@@ -170,8 +172,8 @@ function scheduler() {
 }
 
 function toggleMetronome() {
+    initializeAudioContext();
     try {
-        initializeAudioContext();
         if (!isPlaying) {
             nextNoteTime = audioContext.currentTime + 0.1;
             isPlaying = true;
@@ -198,6 +200,5 @@ function adjustBPM(change) {
 // ✅ Preload Alarm and Initialize Context on Page Load
 window.onload = () => {
     preloadAlarmSound();
-    initializeAudioContext();
     logMessage("Page loaded and ready.");
 };
