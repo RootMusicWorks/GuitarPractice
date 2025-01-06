@@ -53,7 +53,7 @@ function updateTimerDisplay(seconds) {
 
 // タイマー終了時のアラーム音再生
 function playAlarm() {
-    const alarm = new Audio('alarm.mp3'); // アラーム音のファイル
+    const alarm = new Audio('alarm.mp3'); 
     alarm.play();
 }
 
@@ -64,17 +64,18 @@ function stopMetronomeIfPlaying() {
     }
 }
 
-// タイマー終了後のダイアログ表示
+// タイマー終了後のダイアログ表示（EndとRe-Startの2択）
 function showTimerEndDialog() {
-    const result = confirm("タイマー終了！End または Re-Startを選択してください。");
-    if (result) {
+    const dialog = confirm("タイマー終了！
+Endを押すと終了し、Re-Startで再度タイマーを開始します。");
+    if (dialog) {
         resetTimer();
     } else {
         startTimer();
     }
 }
 
-// メトロノーム制御（既存のコード維持）
+// メトロノーム制御（修正済み）
 bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
@@ -102,4 +103,26 @@ function initializeAudioContext() {
     if (audioContext.state === 'suspended') {
         audioContext.resume();
     }
+}
+
+function scheduler() {
+    while (nextNoteTime < audioContext.currentTime + 0.1) {
+        playClick();
+        nextNoteTime += 60.0 / tempo;
+    }
+    if (isPlaying) {
+        requestAnimationFrame(scheduler);
+    }
+}
+
+function playClick() {
+    const osc = audioContext.createOscillator();
+    const gain = audioContext.createGain();
+    osc.frequency.value = 1000;
+    gain.gain.setValueAtTime(1, nextNoteTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
+    osc.connect(gain);
+    gain.connect(audioContext.destination);
+    osc.start(nextNoteTime);
+    osc.stop(nextNoteTime + 0.1);
 }
