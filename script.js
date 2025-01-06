@@ -10,12 +10,21 @@ bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// ✅ Load MP3 into an AudioBuffer instead of HTMLAudioElement
+// ✅ Explicitly create and activate AudioContext with user interaction
+function initializeAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        document.body.addEventListener('click', () => audioContext.resume(), { once: true });
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
+}
+
+// ✅ Load alarm sound into AudioBuffer and ensure it is ready
 async function loadAlarmSound() {
     try {
-        if (!audioContext) {
-            audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        }
+        initializeAudioContext();
         const response = await fetch('alarm.mp3');
         const arrayBuffer = await response.arrayBuffer();
         alarmBuffer = await audioContext.decodeAudioData(arrayBuffer);
@@ -25,9 +34,14 @@ async function loadAlarmSound() {
     }
 }
 
-// ✅ Play the MP3 using AudioBufferSourceNode with precise timing
+// ✅ Play the MP3 alarm sound using AudioBufferSourceNode and stop metronome
 function playAlarmSound() {
-    if (!audioContext || !alarmBuffer) return;
+    if (!audioContext || !alarmBuffer) {
+        alert("アラーム音がロードされていません");
+        return;
+    }
+
+    stopMetronomeIfRunning();  // Ensure metronome stops
     const source = audioContext.createBufferSource();
     source.buffer = alarmBuffer;
     source.connect(audioContext.destination);
@@ -37,15 +51,17 @@ function playAlarmSound() {
     };
 }
 
-// ✅ Ensure metronome stops when the timer ends
+// ✅ Ensure metronome stops completely
 function stopMetronomeIfRunning() {
     if (isPlaying) {
-        toggleMetronome();  // Stop metronome if running
+        isPlaying = false;
+        nextNoteTime = 0;
+        console.log("メトロノームを停止しました");
     }
 }
 
 // Timer Section
-let timerTimeRemaining = 600;  // 10 minutes default
+let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
 
@@ -63,8 +79,7 @@ function startTimer() {
                 updateTimerDisplay();
             } else {
                 stopTimer();
-                stopMetronomeIfRunning();
-                playAlarmSound();  // Play alarm and ensure metronome stops
+                playAlarmSound();
             }
         }, 1000);
     }
@@ -92,16 +107,7 @@ function updateTimerDisplay() {
     document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Metronome Section (unchanged, except context management)
-function initializeAudioContext() {
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
-}
-
+// Metronome Section
 function playClick() {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();
@@ -143,7 +149,7 @@ function adjustBPM(change) {
     bpmInput.value = tempo;
 }
 
-// ✅ Call the sound loader during page load
+// ✅ Ensure the alarm sound is preloaded on page load
 window.onload = () => {
     loadAlarmSound();
 };
