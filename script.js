@@ -29,6 +29,7 @@ function initializeAudioContext() {
     if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => logMessage("AudioContext resumed."));
     }
+    logMessage("AudioContext state: " + audioContext.state);
 }
 
 // ✅ Alarm Sound Preloading with Debug Logs
@@ -42,10 +43,10 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Alarm Playback with Forced Debugging
+// ✅ Alarm Playback with Forced Call and Debugging
 function playAlarmSound() {
     initializeAudioContext();
-    logMessage("playAlarmSound() triggered! Attempting to play alarm...");
+    logMessage("playAlarmSound() called. Attempting to play alarm sound.");
     if (alarmTriggered) {
         logMessage("Alarm already triggered. Skipping duplicate call.");
         return;
@@ -77,7 +78,7 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with Explicit Zero Check and Logging
+// Timer Section with Explicit Call of playAlarmSound()
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
@@ -97,11 +98,12 @@ function startTimer() {
                 if (timerTimeRemaining > 0) {
                     timerTimeRemaining--;
                     updateTimerDisplay();
-                } else if (timerTimeRemaining === 0) {
+                } 
+                if (timerTimeRemaining === 0) {
                     clearInterval(timerInterval);  // Ensure the timer stops completely
                     timerRunning = false;
-                    logMessage("Timer reached zero. Calling playAlarmSound()...");
-                    playAlarmSound();  // Force alarm call with guaranteed check
+                    logMessage("Timer reached zero. Triggering playAlarmSound()...");
+                    playAlarmSound();  // Forcing direct call
                 }
             }, 1000);
             logMessage("Timer started.");
