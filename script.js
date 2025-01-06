@@ -1,108 +1,95 @@
-let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+let audioContext = null;
 let nextNoteTime = 0.0;
 let tempo = 120;
 let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
-let timerInput = document.getElementById("timerInput");
-let timerDisplay = document.getElementById("timerDisplay");
-let timerDuration = 600; // 10 minutes in seconds
-let timerRunning = false;
-let timerPaused = false;
-let timerInterval;
-let alarmOscillator = null;
-let beatCounter = 0;
 
-// Timer Functions
-function updateTimerDisplay(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    timerDisplay.textContent = `${minutes}:${secs.toString().padStart(2, '0')}`;
+// Timer variables
+let timerDuration = 600;
+let timerTimeRemaining = timerDuration;
+let timerInterval = null;
+let timerRunning = false;
+let timerAudioContext = null;
+
+bpmInput.addEventListener("input", () => {
+    tempo = parseInt(bpmInput.value);
+});
+
+function initializeAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
 }
 
 function startTimer() {
+    if (!timerAudioContext) {
+        timerAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
     if (timerRunning) return;
     timerRunning = true;
-    timerPaused = false;
-    timerDuration = parseInt(timerInput.value) * 60;
-    updateTimerDisplay(timerDuration);
+
+    const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
+    const seconds = parseInt(document.getElementById("secondsInput").value) || 0;
+    timerTimeRemaining = minutes * 60 + seconds;
+    updateTimerDisplay();
+
     timerInterval = setInterval(() => {
-        if (timerDuration > 0) {
-            timerDuration--;
-            updateTimerDisplay(timerDuration);
+        if (timerTimeRemaining > 0) {
+            timerTimeRemaining--;
+            updateTimerDisplay();
         } else {
             stopTimer();
-            playAlarm();
+            playTimerAlarm();
         }
     }, 1000);
 }
 
-function pauseResumeTimer() {
+function pauseTimer() {
     if (timerRunning) {
         clearInterval(timerInterval);
         timerRunning = false;
-        timerPaused = true;
-    } else if (timerPaused) {
-        timerRunning = true;
-        timerPaused = false;
-        timerInterval = setInterval(() => {
-            if (timerDuration > 0) {
-                timerDuration--;
-                updateTimerDisplay(timerDuration);
-            } else {
-                stopTimer();
-                playAlarm();
-            }
-        }, 1000);
+    } else {
+        startTimer();
     }
 }
 
-function stopTimer() {
+function resetTimer() {
     clearInterval(timerInterval);
+    timerTimeRemaining = timerDuration;
+    updateTimerDisplay();
     timerRunning = false;
-    timerPaused = false;
-    updateTimerDisplay(parseInt(timerInput.value) * 60);
 }
 
-// Alarm Sound (Oscillator) with dialog control
-function playAlarm() {
-    if (isPlaying) stopMetronome(); // Stop metronome if running
-    alarmOscillator = audioContext.createOscillator();
-    const gain = audioContext.createGain();
-    alarmOscillator.frequency.value = 880;
-    gain.gain.value = 0.5;
-    alarmOscillator.connect(gain);
-    gain.connect(audioContext.destination);
-    alarmOscillator.start();
-
-    alert("タイマーが終了しました。OKを押すとアラームが停止します。");
-    stopAlarm();
+function updateTimerDisplay() {
+    const minutes = Math.floor(timerTimeRemaining / 60);
+    const seconds = timerTimeRemaining % 60;
+    document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-function stopAlarm() {
-    if (alarmOscillator) {
-        alarmOscillator.stop();
-        alarmOscillator.disconnect();
-        alarmOscillator = null;
+function playTimerAlarm() {
+    if (isPlaying) {
+        toggleMetronome();
     }
+    alert("タイマーが終了しました");
 }
-
-// Metronome Functions
-bpmInput.addEventListener("input", () => {
-    tempo = parseInt(bpmInput.value);
-});
 
 function playClick() {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();
     const envelope = audioContext.createGain();
-    osc.frequency.value = 1000;
-    envelope.gain.setValueAtTime(beatCounter === 0 ? 1 : 0.7, nextNoteTime);
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1000, nextNoteTime);
+    envelope.gain.setValueAtTime(1, nextNoteTime);
     envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
+
     osc.connect(envelope);
     envelope.connect(audioContext.destination);
     osc.start(nextNoteTime);
     osc.stop(nextNoteTime + 0.1);
-    beatCounter++;
 }
 
 function scheduler() {
@@ -115,7 +102,8 @@ function scheduler() {
     }
 }
 
-async function toggleMetronome() {
+function toggleMetronome() {
+    initializeAudioContext();
     if (!isPlaying) {
         nextNoteTime = audioContext.currentTime + 0.1;
         isPlaying = true;

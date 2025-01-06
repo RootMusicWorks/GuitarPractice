@@ -3,35 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>メトロノーム & タイマー</title>
+    <title>メトロノーム＆タイマー</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
 </head>
 <body>
     <div class="container">
         <h1>メトロノーム & タイマー</h1>
-        
+
         <!-- Timer Section -->
         <div class="timer-section">
-            <label for="timerInput">タイマー (分): </label>
-            <input type="number" id="timerInput" value="10">
-            <div class="timer-display" id="timerDisplay">10:00</div>
-            <button onclick="startTimer()">スタート</button>
-            <button onclick="pauseResumeTimer()">一時停止/再開</button>
-            <button onclick="stopTimer()">終了</button>
+            <label for="timerInput">タイマー (分:秒):</label>
+            <input type="number" id="minutesInput" value="10" min="0">:
+            <input type="number" id="secondsInput" value="0" min="0" max="59">
+            <div class="timer-buttons">
+                <button onclick="startTimer()">スタート</button>
+                <button onclick="pauseTimer()">一時停止 / 再開</button>
+                <button onclick="resetTimer()">ストップ</button>
+            </div>
+            <p id="timerDisplay">10:00</p>
         </div>
 
         <!-- Metronome Section -->
-        <div class="bpm-section">
-            <label for="bpmInput">BPM: </label>
+        <div class="bpm-display">
+            <label for="bpmInput">現在のBPM:</label>
             <input type="number" id="bpmInput" value="120">
-            <div class="bpm-buttons">
-                <button onclick="adjustBPM(-10)">-10</button>
-                <button onclick="adjustBPM(-5)">-5</button>
-                <button class="play-button" onclick="toggleMetronome()">スタート / ストップ</button>
-                <button onclick="adjustBPM(5)">+5</button>
-                <button onclick="adjustBPM(10)">+10</button>
-            </div>
+        </div>
+        <div class="bpm-buttons">
+            <button onclick="adjustBPM(-10)">-10</button>
+            <button onclick="adjustBPM(-5)">-5</button>
+            <button class="play-button" onclick="toggleMetronome()"><span>start</span><br><span>stop</span></button>
+            <button onclick="adjustBPM(5)">+5</button>
+            <button onclick="adjustBPM(10)">+10</button>
         </div>
     </div>
     <script src="script.js"></script>
