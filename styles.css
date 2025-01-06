@@ -5,8 +5,12 @@ body {
 }
 
 .container {
-    max-width: 400px;
+    max-width: 350px;
     margin: 0 auto;
+}
+
+.timer-section, .bpm-section {
+    margin-bottom: 30px;
 }
 
 input[type="number"] {
@@ -15,16 +19,28 @@ input[type="number"] {
     text-align: center;
 }
 
+.timer-display {
+    font-size: 2em;
+    margin: 10px;
+}
+
+.bpm-buttons, .timer-section button {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 10px;
+}
+
 button {
     padding: 10px;
-    margin: 5px;
-    cursor: pointer;
+    font-size: 16px;
     border: none;
     border-radius: 5px;
     background-color: #4CAF50;
     color: white;
+    cursor: pointer;
 }
 
-button.play-button {
+.play-button {
     background-color: #f44336;
 }
