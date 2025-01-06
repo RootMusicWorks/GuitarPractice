@@ -3,7 +3,10 @@ let tempo = 120;
 let bpmInput = document.getElementById("bpmInput");
 const clickAudio = new Audio('click.mp3');  
 const alarmAudio = new Audio('alarm.mp3');  
-let alarmTriggered = false;
+clickAudio.preload = 'auto';
+alarmAudio.preload = 'auto';
+
+let metronomeRunning = false;
 
 // ✅ Debug Log Display Setup
 const debugLog = document.createElement('div');
@@ -17,14 +20,28 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Metronome using HTMLAudioElement
-function toggleMetronome() {
+// ✅ iOS Click Sound Fix using Immediate Interaction
+function playClickSound() {
     try {
-        clickAudio.currentTime = 0;
+        clickAudio.pause();  // Stop any ongoing playback
+        clickAudio.currentTime = 0;  // Reset audio for immediate replay
         clickAudio.play();
         logMessage("Click sound played using HTMLAudioElement.");
     } catch (error) {
         logMessage("Error playing click sound: " + error);
+    }
+}
+
+// ✅ Metronome Toggle with Explicit Preload
+function toggleMetronome() {
+    if (!metronomeRunning) {
+        metronomeRunning = true;
+        playClickSound();
+        metronomeInterval = setInterval(playClickSound, (60 / tempo) * 1000);
+    } else {
+        metronomeRunning = false;
+        clearInterval(metronomeInterval);
+        logMessage("Metronome stopped.");
     }
 }
 
@@ -34,7 +51,6 @@ let timerRunning = false;
 let timerInterval = null;
 
 function startTimer() {
-    alarmTriggered = false;  
     try {
         if (!timerRunning) {
             const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
@@ -48,7 +64,7 @@ function startTimer() {
                     timerTimeRemaining--;
                     updateTimerDisplay();
                 } 
-                if (timerTimeRemaining <= 0 && !alarmTriggered) {
+                if (timerTimeRemaining <= 0) {
                     clearInterval(timerInterval);  
                     timerRunning = false;
                     playAlarmSound();  
@@ -62,46 +78,31 @@ function startTimer() {
 }
 
 function pauseTimer() {
-    try {
-        if (timerRunning) {
-            clearInterval(timerInterval);
-            timerRunning = false;
-            logMessage("Timer paused.");
-        } else {
-            startTimer();
-        }
-    } catch (error) {
-        logMessage("Error pausing timer: " + error);
+    if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        logMessage("Timer paused.");
+    } else {
+        startTimer();
     }
 }
 
 function resetTimer() {
-    try {
-        clearInterval(timerInterval);
-        timerRunning = false;
-        timerTimeRemaining = 600;
-        updateTimerDisplay();
-        alarmTriggered = false;  
-        logMessage("Timer reset.");
-    } catch (error) {
-        logMessage("Error resetting timer: " + error);
-    }
+    clearInterval(timerInterval);
+    timerRunning = false;
+    timerTimeRemaining = 600;
+    updateTimerDisplay();
+    logMessage("Timer reset.");
 }
 
 function updateTimerDisplay() {
-    try {
-        const minutes = Math.floor(timerTimeRemaining / 60);
-        const seconds = timerTimeRemaining % 60;
-        document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        logMessage(`Timer updated: ${minutes}:${seconds}`);
-    } catch (error) {
-        logMessage("Error updating timer display: " + error);
-    }
+    const minutes = Math.floor(timerTimeRemaining / 60);
+    const seconds = timerTimeRemaining % 60;
+    document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// ✅ Alarm Sound using HTMLAudioElement
+// ✅ Alarm Sound using HTMLAudioElement (no AudioContext)
 function playAlarmSound() {
-    alarmTriggered = true;
     try {
         alarmAudio.pause();
         alarmAudio.currentTime = 0;
@@ -116,18 +117,16 @@ function playAlarmSound() {
     }
 }
 
-// ✅ BPM Adjustment with Debug
+// ✅ BPM Adjustment
 function adjustBPM(change) {
     tempo += change;
     bpmInput.value = tempo;
     logMessage(`BPM adjusted to: ${tempo}`);
 }
 
-// ✅ Preload Alarm and Click Sound on Page Load
-window.onload = () => {
-    alarmAudio.preload = "auto";
-    clickAudio.preload = "auto";
-    alarmAudio.load();
+// ✅ Preload Audio on User Interaction
+window.addEventListener('pointerdown', () => {
     clickAudio.load();
-    logMessage("Page loaded and sounds preloaded.");
-};
+    alarmAudio.load();
+    logMessage("Audio preloaded on user interaction.");
+}, { once: true });
