@@ -6,7 +6,7 @@ let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
 const alarmAudio = new Audio('alarm.mp3');  
 
-// ✅ Log Display for Debugging
+// ✅ Debug Log Display Setup
 const debugLog = document.createElement('div');
 debugLog.style.border = "1px solid red";
 debugLog.style.padding = "10px";
@@ -18,7 +18,7 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Forced AudioContext Activation on Button Press Only
+// ✅ Forced AudioContext Activation with User Interaction
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -30,7 +30,7 @@ function initializeAudioContext() {
     }
 }
 
-// ✅ Alarm Sound Preload and Handling
+// ✅ Alarm Sound Preloading with Debug Logs
 function preloadAlarmSound() {
     try {
         alarmAudio.preload = "auto";
@@ -41,14 +41,16 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Synchronized Alarm and Metronome Stop with User Interaction
+// ✅ Alarm Playback with Enhanced Debugging
 function playAlarmSound() {
     initializeAudioContext();
+    logMessage("Attempting to play alarm sound...");
     try {
-        stopMetronome();  // Ensure metronome stops
+        stopMetronome();  
         alarmAudio.pause();
         alarmAudio.currentTime = 0;
         alarmAudio.play().then(() => {
+            logMessage("Alarm sound played successfully.");
             alert("タイマーが終了しました");
         }).catch(error => {
             logMessage("Error playing alarm sound: " + error);
@@ -58,7 +60,7 @@ function playAlarmSound() {
     }
 }
 
-// ✅ Stop Metronome Completely
+// ✅ Stop Metronome with Debug Logs
 function stopMetronome() {
     try {
         isPlaying = false;
@@ -69,7 +71,7 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with Debugging
+// Timer Section with More Debugging
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
@@ -90,6 +92,7 @@ function startTimer() {
                     updateTimerDisplay();
                 } else {
                     stopTimer();
+                    logMessage("Timer reached zero. Triggering playAlarmSound().");
                     playAlarmSound();
                 }
             }, 1000);
@@ -197,7 +200,7 @@ function adjustBPM(change) {
     }
 }
 
-// ✅ Preload Alarm and Initialize Context on Page Load
+// ✅ Ensure Alarm and AudioContext Initialize on Load
 window.onload = () => {
     preloadAlarmSound();
     logMessage("Page loaded and ready.");
