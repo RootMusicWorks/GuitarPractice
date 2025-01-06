@@ -19,14 +19,14 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Forced AudioContext Activation with User Interaction
+// ✅ Forced AudioContext Activation with User Interaction and Pointerdown Event
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         logMessage("AudioContext initialized.");
     }
     if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => logMessage("AudioContext resumed."));
+        audioContext.resume().then(() => logMessage("AudioContext resumed due to forced interaction."));
     }
     logMessage("AudioContext state: " + audioContext.state);
 }
@@ -84,7 +84,7 @@ let timerInterval = null;
 
 function startTimer() {
     initializeAudioContext();
-    alarmTriggered = false;  // Reset alarm trigger flag
+    alarmTriggered = false;  
     try {
         if (!timerRunning) {
             const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
@@ -150,10 +150,10 @@ function updateTimerDisplay() {
     }
 }
 
-// Metronome Section with Forced AudioContext Resume
+// ✅ Metronome Section with Forced AudioContext Resume
 function playClick() {
     try {
-        initializeAudioContext();  // Forcing AudioContext resume on each click
+        initializeAudioContext();  
         const osc = audioContext.createOscillator();
         const envelope = audioContext.createGain();
         osc.type = 'square';
@@ -213,6 +213,6 @@ function adjustBPM(change) {
 // ✅ Preload Alarm and Initialize Context on Page Load
 window.onload = () => {
     preloadAlarmSound();
-    document.body.addEventListener('pointerdown', () => initializeAudioContext(), { once: true });
-    logMessage("Page loaded and ready.");
+    document.body.addEventListener('pointerdown', () => initializeAudioContext());
+    logMessage("Page loaded and ready. Pointer event listener added.");
 };
