@@ -1,13 +1,8 @@
-let audioContext = null;
-let nextNoteTime = 0.0;
+
 let tempo = 120;
-let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
-let beatCounter = 0;
 const alarmAudio = new Audio('alarm.mp3');  
-let alarmTriggered = false;  
-let metronomeOscillator = null;  
-let gainNode = null;
+let alarmTriggered = false;
 
 // ✅ Debug Log Display Setup
 const debugLog = document.createElement('div');
@@ -21,81 +16,30 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Forced AudioContext Activation with User Interaction
-function initializeAudioContext() {
-    if (!audioContext) {
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        gainNode = audioContext.createGain();
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);  // Initially silent
-        gainNode.connect(audioContext.destination);
-
-        metronomeOscillator = audioContext.createOscillator();
-        metronomeOscillator.type = 'square';
-        metronomeOscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
-        metronomeOscillator.connect(gainNode);
-        metronomeOscillator.start(); // Always running, only volume is controlled
-        logMessage("AudioContext and Oscillator initialized.");
-    }
-    if (audioContext.state === 'suspended') {
-        audioContext.resume().then(() => logMessage("AudioContext resumed due to forced interaction."));
-    }
-    logMessage("AudioContext state: " + audioContext.state);
+// ✅ Create a new AudioContext and Oscillator each time
+function createAudioContextAndClick() {
+    let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+    
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(1000, audioContext.currentTime);
+    osc.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    osc.start();
+    osc.stop(audioContext.currentTime + 0.2);
+    logMessage("New AudioContext created and click sound played.");
 }
 
-// ✅ Alarm Sound Preloading with Debug Logs
-function preloadAlarmSound() {
-    try {
-        alarmAudio.preload = "auto";
-        alarmAudio.load();
-        logMessage("Alarm sound preloaded.");
-    } catch (error) {
-        logMessage("Error preloading alarm sound: " + error);
-    }
-}
-
-// ✅ Alarm Playback with Explicit Debugging
-function playAlarmSound() {
-    initializeAudioContext();
-    logMessage("playAlarmSound() called! Attempting to play alarm.");
-    if (alarmTriggered) {
-        logMessage("Alarm already triggered. Skipping duplicate call.");
-        return;
-    }
-    alarmTriggered = true;
-    try {
-        stopMetronome();  
-        alarmAudio.pause();
-        alarmAudio.currentTime = 0;
-        alarmAudio.play().then(() => {
-            logMessage("Alarm sound played successfully.");
-            alert("タイマーが終了しました");
-        }).catch(error => {
-            logMessage("Error playing alarm sound: " + error);
-        });
-    } catch (error) {
-        logMessage("Unexpected error during alarm playback: " + error);
-    }
-}
-
-// ✅ Stop Metronome with Debug Logs
-function stopMetronome() {
-    try {
-        isPlaying = false;
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);  
-        nextNoteTime = 0;
-        logMessage("Metronome force stopped.");
-    } catch (error) {
-        logMessage("Error stopping metronome: " + error);
-    }
-}
-
-// Timer Section
+// ✅ Timer Section
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
 
 function startTimer() {
-    initializeAudioContext();
     alarmTriggered = false;  
     try {
         if (!timerRunning) {
@@ -113,7 +57,6 @@ function startTimer() {
                 if (timerTimeRemaining <= 0 && !alarmTriggered) {
                     clearInterval(timerInterval);  
                     timerRunning = false;
-                    logMessage("Timer reached zero. Triggering playAlarmSound().");
                     playAlarmSound();  
                 }
             }, 1000);
@@ -162,59 +105,38 @@ function updateTimerDisplay() {
     }
 }
 
-// ✅ Metronome Section using Preloaded Oscillator and Gain Node
-function playClick() {
+// ✅ Alarm Sound Section
+function playAlarmSound() {
+    alarmTriggered = true;
     try {
-        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);  
-        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+        alarmAudio.pause();
+        alarmAudio.currentTime = 0;
+        alarmAudio.play().then(() => {
+            alert("タイマーが終了しました");
+            logMessage("Alarm sound played successfully.");
+        }).catch(error => {
+            logMessage("Error playing alarm sound: " + error);
+        });
     } catch (error) {
-        logMessage("Error playing metronome click: " + error);
+        logMessage("Error playing alarm: " + error);
     }
 }
 
-function scheduler() {
-    try {
-        while (nextNoteTime < audioContext.currentTime + 0.1) {
-            playClick();
-            nextNoteTime += 60.0 / tempo;
-        }
-        if (isPlaying) {
-            requestAnimationFrame(scheduler);
-        }
-    } catch (error) {
-        logMessage("Error in metronome scheduler: " + error);
-    }
-}
-
+// ✅ Metronome Section using New Context Each Click
 function toggleMetronome() {
-    initializeAudioContext();
-    try {
-        if (!isPlaying) {
-            nextNoteTime = audioContext.currentTime + 0.1;
-            isPlaying = true;
-            scheduler();
-            logMessage("Metronome started.");
-        } else {
-            stopMetronome();
-        }
-    } catch (error) {
-        logMessage("Error toggling metronome: " + error);
-    }
+    createAudioContextAndClick();
 }
 
+// ✅ BPM Adjustment with Debug
 function adjustBPM(change) {
-    try {
-        tempo += change;
-        bpmInput.value = tempo;
-        logMessage(`BPM adjusted: ${tempo}`);
-    } catch (error) {
-        logMessage("Error adjusting BPM: " + error);
-    }
+    tempo += change;
+    bpmInput.value = tempo;
+    logMessage(`BPM adjusted to: ${tempo}`);
 }
 
-// ✅ Preload Alarm and Initialize Context on Page Load
+// ✅ Preload Alarm on Page Load
 window.onload = () => {
-    preloadAlarmSound();
-    document.body.addEventListener('pointerdown', () => initializeAudioContext());
-    logMessage("Page loaded and ready. Pointer event listener added.");
+    alarmAudio.preload = "auto";
+    alarmAudio.load();
+    logMessage("Page loaded and alarm preloaded.");
 };
