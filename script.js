@@ -42,15 +42,15 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Alarm Playback with Enhanced Debugging (Extra Logs Added)
+// ✅ Alarm Playback with Forced Debugging
 function playAlarmSound() {
     initializeAudioContext();
+    logMessage("playAlarmSound() triggered! Attempting to play alarm...");
     if (alarmTriggered) {
         logMessage("Alarm already triggered. Skipping duplicate call.");
         return;
     }
     alarmTriggered = true;
-    logMessage("playAlarmSound() called.");  
     try {
         stopMetronome();  
         alarmAudio.pause();
@@ -77,7 +77,7 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with Corrected Termination and Logging
+// Timer Section with Explicit Zero Check and Logging
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
@@ -97,11 +97,11 @@ function startTimer() {
                 if (timerTimeRemaining > 0) {
                     timerTimeRemaining--;
                     updateTimerDisplay();
-                } else {
+                } else if (timerTimeRemaining === 0) {
                     clearInterval(timerInterval);  // Ensure the timer stops completely
                     timerRunning = false;
-                    logMessage("Timer reached zero. Triggering playAlarmSound()...");
-                    playAlarmSound();  // Force alarm call
+                    logMessage("Timer reached zero. Calling playAlarmSound()...");
+                    playAlarmSound();  // Force alarm call with guaranteed check
                 }
             }, 1000);
             logMessage("Timer started.");
