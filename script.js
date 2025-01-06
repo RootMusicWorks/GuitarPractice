@@ -150,7 +150,7 @@ function updateTimerDisplay() {
     }
 }
 
-// ✅ Metronome Section with Forced AudioContext Resume
+// ✅ Metronome Section with Forced AudioContext Resume and Fixed Gain
 function playClick() {
     try {
         initializeAudioContext();  
@@ -158,13 +158,15 @@ function playClick() {
         const envelope = audioContext.createGain();
         osc.type = 'square';
         osc.frequency.setValueAtTime(1000, nextNoteTime);
-        envelope.gain.setValueAtTime(1, nextNoteTime);
-        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
+        
+        // ✅ Adjusted gain to be louder initially and reduce slower
+        envelope.gain.setValueAtTime(1.0, nextNoteTime);  // Full volume initially
+        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.2);  // Slower fadeout
 
         osc.connect(envelope);
         envelope.connect(audioContext.destination);
         osc.start(nextNoteTime);
-        osc.stop(nextNoteTime + 0.1);
+        osc.stop(nextNoteTime + 0.2);  // Slightly longer playback duration
     } catch (error) {
         logMessage("Error playing metronome click: " + error);
     }
