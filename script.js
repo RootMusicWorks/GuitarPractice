@@ -11,12 +11,13 @@ let timerDuration = 600;
 let timerTimeRemaining = timerDuration;
 let timerInterval = null;
 let timerRunning = false;
+let alarmAudio = document.getElementById('alarmSound');
 
 bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// Initialize Metronome AudioContext
+// Initialize Audio Context for Metronome
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -69,18 +70,23 @@ function updateTimerDisplay() {
     document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+// ✅ Fixed Timer Alarm with Proper Handling
 function playTimerAlarm() {
     if (isPlaying) {
         toggleMetronome(); // Stop metronome if running
     }
-    const alarmSound = document.getElementById('alarmSound');
-    alarmSound.play();
-    alert("タイマーが終了しました");
-    alarmSound.pause();
-    alarmSound.currentTime = 0;
+    alarmAudio.pause();  // Ensure previous sound is stopped
+    alarmAudio.currentTime = 0;  // Reset playback to the start
+    alarmAudio.play().then(() => {
+        setTimeout(() => {
+            alert("タイマーが終了しました");
+        }, 100);  // Delay dialog slightly after audio starts
+    }).catch(error => {
+        console.error("Audio playback error:", error);
+    });
 }
 
-// Metronome Functions (Separate Context)
+// Metronome Functions
 function playClick() {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();
