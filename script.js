@@ -10,27 +10,27 @@ bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// ✅ Explicitly create and activate AudioContext with user interaction
+// ✅ Explicit AudioContext activation with user interaction
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        document.body.addEventListener('click', () => audioContext.resume(), { once: true });
+        document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
     }
     if (audioContext.state === 'suspended') {
         audioContext.resume();
     }
 }
 
-// ✅ Load alarm sound into AudioBuffer and ensure it is ready
+// ✅ Load and decode the alarm sound into an AudioBuffer
 async function loadAlarmSound() {
     try {
         initializeAudioContext();
         const response = await fetch('alarm.mp3');
         const arrayBuffer = await response.arrayBuffer();
         alarmBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        console.log("Alarm sound loaded successfully");
+        console.log("Alarm sound successfully loaded.");
     } catch (error) {
-        console.error("Error loading alarm sound:", error);
+        console.error("Failed to load alarm sound:", error);
     }
 }
 
@@ -41,7 +41,7 @@ function playAlarmSound() {
         return;
     }
 
-    stopMetronomeIfRunning();  // Ensure metronome stops
+    stopMetronome();  // Ensure metronome stops completely
     const source = audioContext.createBufferSource();
     source.buffer = alarmBuffer;
     source.connect(audioContext.destination);
@@ -51,12 +51,12 @@ function playAlarmSound() {
     };
 }
 
-// ✅ Ensure metronome stops completely
-function stopMetronomeIfRunning() {
+// ✅ Ensure the metronome stops completely
+function stopMetronome() {
     if (isPlaying) {
         isPlaying = false;
         nextNoteTime = 0;
-        console.log("メトロノームを停止しました");
+        console.log("メトロノームを強制停止しました");
     }
 }
 
@@ -140,7 +140,7 @@ function toggleMetronome() {
         isPlaying = true;
         scheduler();
     } else {
-        isPlaying = false;
+        stopMetronome();
     }
 }
 
