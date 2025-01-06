@@ -6,18 +6,20 @@ let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
 
 // Timer variables with separate context
-let timerAudioContext = null;
 let timerDuration = 600;
 let timerTimeRemaining = timerDuration;
 let timerInterval = null;
 let timerRunning = false;
-let alarmAudio = document.getElementById('alarmSound');
+
+// Ensure the audio element is loaded and ready
+const alarmAudio = document.getElementById('alarmSound');
+alarmAudio.load();  // Force preload to avoid playback issues
 
 bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// Initialize Audio Context for Metronome
+// Initialize Metronome AudioContext
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -70,20 +72,23 @@ function updateTimerDisplay() {
     document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// ✅ Fixed Timer Alarm with Proper Handling
-function playTimerAlarm() {
+// ✅ Final Fix: MP3 Alarm and Dialog Control
+async function playTimerAlarm() {
     if (isPlaying) {
-        toggleMetronome(); // Stop metronome if running
+        toggleMetronome();  // Ensure metronome stops
     }
-    alarmAudio.pause();  // Ensure previous sound is stopped
-    alarmAudio.currentTime = 0;  // Reset playback to the start
-    alarmAudio.play().then(() => {
+
+    try {
+        alarmAudio.pause();
+        alarmAudio.currentTime = 0;
+        await alarmAudio.play();
         setTimeout(() => {
             alert("タイマーが終了しました");
-        }, 100);  // Delay dialog slightly after audio starts
-    }).catch(error => {
+        }, 200);  // Ensuring the alert appears after the alarm starts
+    } catch (error) {
         console.error("Audio playback error:", error);
-    });
+        alert("アラーム音の再生に失敗しました。");
+    }
 }
 
 // Metronome Functions
