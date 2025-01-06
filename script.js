@@ -159,14 +159,15 @@ function playClick() {
         osc.type = 'square';
         osc.frequency.setValueAtTime(1000, nextNoteTime);
         
-        // ✅ Adjusted gain to be louder initially and reduce slower
+        // ✅ Adjusted gain to be louder and duration to be slightly longer
         envelope.gain.setValueAtTime(1.0, nextNoteTime);  // Full volume initially
-        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.2);  // Slower fadeout
+        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.3);  // Extended fadeout time
 
         osc.connect(envelope);
         envelope.connect(audioContext.destination);
-        osc.start(nextNoteTime);
-        osc.stop(nextNoteTime + 0.2);  // Slightly longer playback duration
+        // ✅ Delaying the start by a slight margin
+        osc.start(nextNoteTime + 0.1);  
+        osc.stop(nextNoteTime + 0.3);  // Extended sound duration
     } catch (error) {
         logMessage("Error playing metronome click: " + error);
     }
