@@ -5,6 +5,7 @@ let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
 const alarmAudio = new Audio('alarm.mp3');  
+let alarmTriggered = false;  // Prevent double execution
 
 // ✅ Debug Log Display Setup
 const debugLog = document.createElement('div');
@@ -44,7 +45,12 @@ function preloadAlarmSound() {
 // ✅ Alarm Playback with Enhanced Debugging (Extra Logs Added)
 function playAlarmSound() {
     initializeAudioContext();
-    logMessage("playAlarmSound() called.");  // Confirming function call
+    if (alarmTriggered) {
+        logMessage("Alarm already triggered. Skipping duplicate call.");
+        return;
+    }
+    alarmTriggered = true;
+    logMessage("playAlarmSound() called.");  
     try {
         stopMetronome();  
         alarmAudio.pause();
@@ -71,13 +77,14 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with More Debugging
+// Timer Section with Corrected Termination and Logging
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
 
 function startTimer() {
     initializeAudioContext();
+    alarmTriggered = false;  // Reset alarm trigger flag
     try {
         if (!timerRunning) {
             const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
@@ -91,9 +98,10 @@ function startTimer() {
                     timerTimeRemaining--;
                     updateTimerDisplay();
                 } else {
-                    stopTimer();
-                    logMessage("Timer reached zero. Calling playAlarmSound()...");
-                    playAlarmSound();
+                    clearInterval(timerInterval);  // Ensure the timer stops completely
+                    timerRunning = false;
+                    logMessage("Timer reached zero. Triggering playAlarmSound()...");
+                    playAlarmSound();  // Force alarm call
                 }
             }, 1000);
             logMessage("Timer started.");
@@ -123,6 +131,7 @@ function resetTimer() {
         timerRunning = false;
         timerTimeRemaining = 600;
         updateTimerDisplay();
+        alarmTriggered = false;  // Reset alarm flag on reset
         logMessage("Timer reset.");
     } catch (error) {
         logMessage("Error resetting timer: " + error);
