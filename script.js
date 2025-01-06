@@ -43,10 +43,10 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Alarm Playback with Forced Call and Debugging
+// ✅ Alarm Playback with Explicit Debugging
 function playAlarmSound() {
     initializeAudioContext();
-    logMessage("playAlarmSound() called. Attempting to play alarm sound.");
+    logMessage("playAlarmSound() called! Attempting to play alarm.");
     if (alarmTriggered) {
         logMessage("Alarm already triggered. Skipping duplicate call.");
         return;
@@ -78,7 +78,7 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with Explicit Call of playAlarmSound()
+// Timer Section with Explicit Condition Check and Debug Logs
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
@@ -99,11 +99,11 @@ function startTimer() {
                     timerTimeRemaining--;
                     updateTimerDisplay();
                 } 
-                if (timerTimeRemaining === 0) {
+                if (timerTimeRemaining <= 0 && !alarmTriggered) {
                     clearInterval(timerInterval);  // Ensure the timer stops completely
                     timerRunning = false;
-                    logMessage("Timer reached zero. Triggering playAlarmSound()...");
-                    playAlarmSound();  // Forcing direct call
+                    logMessage("Timer reached zero. FORCING playAlarmSound() call.");
+                    playAlarmSound();  // Force alarm call
                 }
             }, 1000);
             logMessage("Timer started.");
