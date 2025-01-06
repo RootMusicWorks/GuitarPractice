@@ -1,4 +1,5 @@
 let audioContext = null;
+let metronomeContext = null;
 let nextNoteTime = 0.0;
 let tempo = 120;
 let isPlaying = false;
@@ -10,48 +11,52 @@ bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// ✅ Explicit AudioContext activation with user interaction
-function initializeAudioContext() {
+// ✅ Explicit AudioContext activation for both metronome and alarm
+function initializeAudioContexts() {
+    if (!metronomeContext) {
+        metronomeContext = new (window.AudioContext || window.webkitAudioContext)();
+        document.body.addEventListener('pointerdown', () => metronomeContext.resume(), { once: true });
+    }
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
     }
-    if (audioContext.state === 'suspended') {
-        audioContext.resume();
-    }
 }
 
-// ✅ Load and decode the alarm sound into an AudioBuffer
+// ✅ Load and decode alarm sound with error handling
 async function loadAlarmSound() {
     try {
-        initializeAudioContext();
+        initializeAudioContexts();
         const response = await fetch('alarm.mp3');
         const arrayBuffer = await response.arrayBuffer();
         alarmBuffer = await audioContext.decodeAudioData(arrayBuffer);
         console.log("Alarm sound successfully loaded.");
     } catch (error) {
-        console.error("Failed to load alarm sound:", error);
+        console.error("Error loading alarm sound:", error);
+        alert("アラーム音のロードに失敗しました。");
     }
 }
 
-// ✅ Play the MP3 alarm sound using AudioBufferSourceNode and stop metronome
+// ✅ Play the MP3 alarm with a dedicated context
 function playAlarmSound() {
-    if (!audioContext || !alarmBuffer) {
-        alert("アラーム音がロードされていません");
+    if (!alarmBuffer) {
+        alert("アラーム音がロードされていません。");
         return;
     }
 
-    stopMetronome();  // Ensure metronome stops completely
-    const source = audioContext.createBufferSource();
-    source.buffer = alarmBuffer;
-    source.connect(audioContext.destination);
-    source.start();
-    source.onended = () => {
+    stopMetronome();  // Ensure metronome stops
+
+    const alarmSource = audioContext.createBufferSource();
+    alarmSource.buffer = alarmBuffer;
+    alarmSource.connect(audioContext.destination);
+    alarmSource.start();
+
+    alarmSource.onended = () => {
         alert("タイマーが終了しました");
     };
 }
 
-// ✅ Ensure the metronome stops completely
+// ✅ Stop metronome completely with forced context reset
 function stopMetronome() {
     if (isPlaying) {
         isPlaying = false;
@@ -107,24 +112,24 @@ function updateTimerDisplay() {
     document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Metronome Section
+// Metronome Section (dedicated context)
 function playClick() {
-    if (!audioContext) return;
-    const osc = audioContext.createOscillator();
-    const envelope = audioContext.createGain();
+    if (!metronomeContext) return;
+    const osc = metronomeContext.createOscillator();
+    const envelope = metronomeContext.createGain();
     osc.type = 'square';
     osc.frequency.setValueAtTime(1000, nextNoteTime);
     envelope.gain.setValueAtTime(1, nextNoteTime);
     envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
 
     osc.connect(envelope);
-    envelope.connect(audioContext.destination);
+    envelope.connect(metronomeContext.destination);
     osc.start(nextNoteTime);
     osc.stop(nextNoteTime + 0.1);
 }
 
 function scheduler() {
-    while (nextNoteTime < audioContext.currentTime + 0.1) {
+    while (nextNoteTime < metronomeContext.currentTime + 0.1) {
         playClick();
         nextNoteTime += 60.0 / tempo;
     }
@@ -134,9 +139,9 @@ function scheduler() {
 }
 
 function toggleMetronome() {
-    initializeAudioContext();
+    initializeAudioContexts();
     if (!isPlaying) {
-        nextNoteTime = audioContext.currentTime + 0.1;
+        nextNoteTime = metronomeContext.currentTime + 0.1;
         isPlaying = true;
         scheduler();
     } else {
