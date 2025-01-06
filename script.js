@@ -41,10 +41,10 @@ function preloadAlarmSound() {
     }
 }
 
-// ✅ Alarm Playback with Enhanced Debugging
+// ✅ Alarm Playback with Enhanced Debugging (Extra Logs Added)
 function playAlarmSound() {
     initializeAudioContext();
-    logMessage("Attempting to play alarm sound...");
+    logMessage("playAlarmSound() called.");  // Confirming function call
     try {
         stopMetronome();  
         alarmAudio.pause();
@@ -92,7 +92,7 @@ function startTimer() {
                     updateTimerDisplay();
                 } else {
                     stopTimer();
-                    logMessage("Timer reached zero. Triggering playAlarmSound().");
+                    logMessage("Timer reached zero. Calling playAlarmSound()...");
                     playAlarmSound();
                 }
             }, 1000);
@@ -200,7 +200,7 @@ function adjustBPM(change) {
     }
 }
 
-// ✅ Ensure Alarm and AudioContext Initialize on Load
+// ✅ Preload Alarm and Initialize Context on Page Load
 window.onload = () => {
     preloadAlarmSound();
     logMessage("Page loaded and ready.");
