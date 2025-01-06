@@ -1,160 +1,189 @@
 let audioContext = null;
-let metronomeContext = null;
 let nextNoteTime = 0.0;
 let tempo = 120;
 let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
-let alarmBuffer = null;  // AudioBuffer for MP3 playback
+const alarmAudio = new Audio('alarm.mp3');  // Directly using HTMLAudioElement
 
 bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
-// ✅ Explicit AudioContext activation for both metronome and alarm
-function initializeAudioContexts() {
-    if (!metronomeContext) {
-        metronomeContext = new (window.AudioContext || window.webkitAudioContext)();
-        document.body.addEventListener('pointerdown', () => metronomeContext.resume(), { once: true });
-    }
+// ✅ Forced AudioContext Activation with User Interaction
+function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         document.body.addEventListener('pointerdown', () => audioContext.resume(), { once: true });
+        console.log("AudioContext initialized.");
+    }
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
     }
 }
 
-// ✅ Load and decode alarm sound with error handling
-async function loadAlarmSound() {
+// ✅ Ensure Alarm is Preloaded
+function preloadAlarmSound() {
     try {
-        initializeAudioContexts();
-        const response = await fetch('alarm.mp3');
-        const arrayBuffer = await response.arrayBuffer();
-        alarmBuffer = await audioContext.decodeAudioData(arrayBuffer);
-        console.log("Alarm sound successfully loaded.");
+        alarmAudio.preload = "auto";
+        alarmAudio.load();
+        console.log("Alarm sound preloaded successfully.");
     } catch (error) {
-        console.error("Error loading alarm sound:", error);
-        alert("アラーム音のロードに失敗しました。");
+        console.error("Error preloading alarm sound:", error);
     }
 }
 
-// ✅ Play the MP3 alarm with a dedicated context
+// ✅ Play Alarm with Strict Handling
 function playAlarmSound() {
-    if (!alarmBuffer) {
-        alert("アラーム音がロードされていません。");
-        return;
+    try {
+        stopMetronome();  // Ensure metronome stops
+        alarmAudio.pause();
+        alarmAudio.currentTime = 0;
+        alarmAudio.play().then(() => {
+            alert("タイマーが終了しました");
+        }).catch(error => {
+            console.error("Error playing alarm sound:", error);
+            alert("アラーム音の再生に失敗しました。");
+        });
+    } catch (error) {
+        console.error("Unexpected error during alarm playback:", error);
     }
-
-    stopMetronome();  // Ensure metronome stops
-
-    const alarmSource = audioContext.createBufferSource();
-    alarmSource.buffer = alarmBuffer;
-    alarmSource.connect(audioContext.destination);
-    alarmSource.start();
-
-    alarmSource.onended = () => {
-        alert("タイマーが終了しました");
-    };
 }
 
-// ✅ Stop metronome completely with forced context reset
+// ✅ Stop Metronome Completely
 function stopMetronome() {
-    if (isPlaying) {
+    try {
         isPlaying = false;
         nextNoteTime = 0;
-        console.log("メトロノームを強制停止しました");
+        console.log("Metronome force stopped.");
+    } catch (error) {
+        console.error("Error stopping metronome:", error);
     }
 }
 
-// Timer Section
+// Timer Section with Console Logs
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
 
 function startTimer() {
-    if (!timerRunning) {
-        const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
-        const seconds = parseInt(document.getElementById("secondsInput").value) || 0;
-        timerTimeRemaining = minutes * 60 + seconds;
-        updateTimerDisplay();
+    try {
+        if (!timerRunning) {
+            const minutes = parseInt(document.getElementById("minutesInput").value) || 0;
+            const seconds = parseInt(document.getElementById("secondsInput").value) || 0;
+            timerTimeRemaining = minutes * 60 + seconds;
+            updateTimerDisplay();
 
-        timerRunning = true;
-        timerInterval = setInterval(() => {
-            if (timerTimeRemaining > 0) {
-                timerTimeRemaining--;
-                updateTimerDisplay();
-            } else {
-                stopTimer();
-                playAlarmSound();
-            }
-        }, 1000);
+            timerRunning = true;
+            timerInterval = setInterval(() => {
+                if (timerTimeRemaining > 0) {
+                    timerTimeRemaining--;
+                    updateTimerDisplay();
+                } else {
+                    stopTimer();
+                    playAlarmSound();
+                }
+            }, 1000);
+        }
+    } catch (error) {
+        console.error("Error starting timer:", error);
     }
 }
 
 function pauseTimer() {
-    if (timerRunning) {
-        clearInterval(timerInterval);
-        timerRunning = false;
-    } else {
-        startTimer();
+    try {
+        if (timerRunning) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+        } else {
+            startTimer();
+        }
+    } catch (error) {
+        console.error("Error pausing timer:", error);
     }
 }
 
 function resetTimer() {
-    clearInterval(timerInterval);
-    timerRunning = false;
-    timerTimeRemaining = 600;
-    updateTimerDisplay();
+    try {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        timerTimeRemaining = 600;
+        updateTimerDisplay();
+    } catch (error) {
+        console.error("Error resetting timer:", error);
+    }
 }
 
 function updateTimerDisplay() {
-    const minutes = Math.floor(timerTimeRemaining / 60);
-    const seconds = timerTimeRemaining % 60;
-    document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    try {
+        const minutes = Math.floor(timerTimeRemaining / 60);
+        const seconds = timerTimeRemaining % 60;
+        document.getElementById("timerDisplay").textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    } catch (error) {
+        console.error("Error updating timer display:", error);
+    }
 }
 
-// Metronome Section (dedicated context)
+// Metronome Section with Logs and Strict Control
 function playClick() {
-    if (!metronomeContext) return;
-    const osc = metronomeContext.createOscillator();
-    const envelope = metronomeContext.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(1000, nextNoteTime);
-    envelope.gain.setValueAtTime(1, nextNoteTime);
-    envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
+    try {
+        if (!audioContext) return;
+        const osc = audioContext.createOscillator();
+        const envelope = audioContext.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(1000, nextNoteTime);
+        envelope.gain.setValueAtTime(1, nextNoteTime);
+        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.1);
 
-    osc.connect(envelope);
-    envelope.connect(metronomeContext.destination);
-    osc.start(nextNoteTime);
-    osc.stop(nextNoteTime + 0.1);
+        osc.connect(envelope);
+        envelope.connect(audioContext.destination);
+        osc.start(nextNoteTime);
+        osc.stop(nextNoteTime + 0.1);
+    } catch (error) {
+        console.error("Error playing metronome click:", error);
+    }
 }
 
 function scheduler() {
-    while (nextNoteTime < metronomeContext.currentTime + 0.1) {
-        playClick();
-        nextNoteTime += 60.0 / tempo;
-    }
-    if (isPlaying) {
-        requestAnimationFrame(scheduler);
+    try {
+        while (nextNoteTime < audioContext.currentTime + 0.1) {
+            playClick();
+            nextNoteTime += 60.0 / tempo;
+        }
+        if (isPlaying) {
+            requestAnimationFrame(scheduler);
+        }
+    } catch (error) {
+        console.error("Error in metronome scheduler:", error);
     }
 }
 
 function toggleMetronome() {
-    initializeAudioContexts();
-    if (!isPlaying) {
-        nextNoteTime = metronomeContext.currentTime + 0.1;
-        isPlaying = true;
-        scheduler();
-    } else {
-        stopMetronome();
+    try {
+        initializeAudioContext();
+        if (!isPlaying) {
+            nextNoteTime = audioContext.currentTime + 0.1;
+            isPlaying = true;
+            scheduler();
+        } else {
+            stopMetronome();
+        }
+    } catch (error) {
+        console.error("Error toggling metronome:", error);
     }
 }
 
 function adjustBPM(change) {
-    tempo += change;
-    bpmInput.value = tempo;
+    try {
+        tempo += change;
+        bpmInput.value = tempo;
+    } catch (error) {
+        console.error("Error adjusting BPM:", error);
+    }
 }
 
-// ✅ Ensure the alarm sound is preloaded on page load
+// ✅ Preload the alarm sound on page load
 window.onload = () => {
-    loadAlarmSound();
+    preloadAlarmSound();
+    initializeAudioContext();
 };
