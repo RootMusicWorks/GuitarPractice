@@ -5,7 +5,9 @@ let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
 let beatCounter = 0;
 const alarmAudio = new Audio('alarm.mp3');  
-let alarmTriggered = false;  // Prevent double execution
+let alarmTriggered = false;  
+let metronomeOscillator = null;  
+let gainNode = null;
 
 // ✅ Debug Log Display Setup
 const debugLog = document.createElement('div');
@@ -19,11 +21,20 @@ function logMessage(message) {
     debugLog.innerHTML += message + "<br>";
 }
 
-// ✅ Forced AudioContext Activation with User Interaction and Pointerdown Event
+// ✅ Forced AudioContext Activation with User Interaction
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        logMessage("AudioContext initialized.");
+        gainNode = audioContext.createGain();
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);  // Initially silent
+        gainNode.connect(audioContext.destination);
+
+        metronomeOscillator = audioContext.createOscillator();
+        metronomeOscillator.type = 'square';
+        metronomeOscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+        metronomeOscillator.connect(gainNode);
+        metronomeOscillator.start(); // Always running, only volume is controlled
+        logMessage("AudioContext and Oscillator initialized.");
     }
     if (audioContext.state === 'suspended') {
         audioContext.resume().then(() => logMessage("AudioContext resumed due to forced interaction."));
@@ -70,6 +81,7 @@ function playAlarmSound() {
 function stopMetronome() {
     try {
         isPlaying = false;
+        gainNode.gain.setValueAtTime(0, audioContext.currentTime);  
         nextNoteTime = 0;
         logMessage("Metronome force stopped.");
     } catch (error) {
@@ -77,7 +89,7 @@ function stopMetronome() {
     }
 }
 
-// Timer Section with Explicit Condition Check and Debug Logs
+// Timer Section
 let timerTimeRemaining = 600;
 let timerRunning = false;
 let timerInterval = null;
@@ -150,24 +162,11 @@ function updateTimerDisplay() {
     }
 }
 
-// ✅ Metronome Section with Forced AudioContext Resume and Fixed Gain
+// ✅ Metronome Section using Preloaded Oscillator and Gain Node
 function playClick() {
     try {
-        initializeAudioContext();  
-        const osc = audioContext.createOscillator();
-        const envelope = audioContext.createGain();
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(1000, nextNoteTime);
-        
-        // ✅ Adjusted gain to be louder and duration to be slightly longer
-        envelope.gain.setValueAtTime(1.0, nextNoteTime);  // Full volume initially
-        envelope.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + 0.3);  // Extended fadeout time
-
-        osc.connect(envelope);
-        envelope.connect(audioContext.destination);
-        // ✅ Delaying the start by a slight margin
-        osc.start(nextNoteTime + 0.1);  
-        osc.stop(nextNoteTime + 0.3);  // Extended sound duration
+        gainNode.gain.setValueAtTime(1.0, audioContext.currentTime);  
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
     } catch (error) {
         logMessage("Error playing metronome click: " + error);
     }
