@@ -3,18 +3,20 @@ let nextNoteTime = 0.0;
 let tempo = 120;
 let isPlaying = false;
 let bpmInput = document.getElementById("bpmInput");
+let beatCounter = 0;
 
-// Timer variables
+// Timer variables with separate context
+let timerAudioContext = null;
 let timerDuration = 600;
 let timerTimeRemaining = timerDuration;
 let timerInterval = null;
 let timerRunning = false;
-let timerAudioContext = null;
 
 bpmInput.addEventListener("input", () => {
     tempo = parseInt(bpmInput.value);
 });
 
+// Initialize Metronome AudioContext
 function initializeAudioContext() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -24,11 +26,8 @@ function initializeAudioContext() {
     }
 }
 
+// Timer Functions
 function startTimer() {
-    if (!timerAudioContext) {
-        timerAudioContext = new (window.AudioContext || window.webkitAudioContext)();
-    }
-
     if (timerRunning) return;
     timerRunning = true;
 
@@ -72,11 +71,16 @@ function updateTimerDisplay() {
 
 function playTimerAlarm() {
     if (isPlaying) {
-        toggleMetronome();
+        toggleMetronome(); // Stop metronome if running
     }
+    const alarmSound = document.getElementById('alarmSound');
+    alarmSound.play();
     alert("タイマーが終了しました");
+    alarmSound.pause();
+    alarmSound.currentTime = 0;
 }
 
+// Metronome Functions (Separate Context)
 function playClick() {
     if (!audioContext) return;
     const osc = audioContext.createOscillator();
