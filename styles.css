@@ -5,18 +5,26 @@ body {
 }
 
 .container {
-    max-width: 350px;
+    max-width: 400px;
     margin: 0 auto;
 }
 
 .timer-section {
-    margin-bottom: 20px;
+    margin-bottom: 30px;
 }
 
-input[type="number"] {
-    width: 80px;
-    padding: 5px;
-    text-align: center;
+.timer-section p {
+    font-size: 2rem;
+    margin: 10px 0;
+}
+
+input[type="number"], button {
+    padding: 10px;
+    font-size: 16px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
 }
 
 .bpm-buttons {
@@ -26,18 +34,7 @@ input[type="number"] {
     margin-top: 20px;
 }
 
-button {
-    flex: 1;
-    padding: 10px;
-    font-size: 16px;
-    border: none;
-    border-radius: 5px;
-    background-color: #4CAF50;
-    color: white;
-    cursor: pointer;
-}
-
 .play-button {
     background-color: #f44336;
-    line-height: 1.2;
+    color: white;
 }
