@@ -9,32 +9,22 @@ body {
     margin: 0 auto;
 }
 
-.timer-section {
-    margin-bottom: 30px;
+input[type="number"] {
+    width: 80px;
+    padding: 5px;
+    text-align: center;
 }
 
-.timer-section p {
-    font-size: 2rem;
-    margin: 10px 0;
-}
-
-input[type="number"], button {
+button {
     padding: 10px;
-    font-size: 16px;
     margin: 5px;
+    cursor: pointer;
     border: none;
     border-radius: 5px;
-    cursor: pointer;
-}
-
-.bpm-buttons {
-    display: flex;
-    justify-content: space-between;
-    gap: 5px;
-    margin-top: 20px;
-}
-
-.play-button {
-    background-color: #f44336;
+    background-color: #4CAF50;
     color: white;
+}
+
+button.play-button {
+    background-color: #f44336;
 }
